@@ -1,0 +1,345 @@
+AI MEETING MINUTES PLATFORM - FULL PROJECT OVERVIEW (UPDATED)
+
+------------------------------------------------------------
+1. PROJECT VISION
+------------------------------------------------------------
+The AI Meeting Minutes Platform is designed to automatically capture,
+transcribe, analyze, and generate structured Minutes of Meeting (MoM)
+from live physical or online meetings.
+
+Goal:
+- Replace manual note-taking
+- Provide real-time live captions
+- Generate structured, accurate meeting minutes
+- Support multilingual and multi-speaker environments
+- Learn recurring speakers and meeting context over time
+- Improve accuracy through voice training, context AI, and stronger noise suppression
+
+------------------------------------------------------------
+2. SYSTEM ARCHITECTURE OVERVIEW
+------------------------------------------------------------
+The system consists of 6 main layers:
+
+1. Frontend (React)
+   - Live meeting UI
+   - Microphone streaming
+   - Real-time transcript display
+   - Live MoM panel
+
+2. Backend (FastAPI)
+   - WebSocket live streaming engine
+   - Chunk processing pipeline
+   - Transcript storage (MongoDB)
+   - Minutes generation
+   - Meeting-state and review workflow
+
+3. ASR Layer
+   - TorongoXetu Assamese model
+   - NeMo-based inference
+   - HTTP bridge service
+
+4. AI Processing Layer
+   - Gemini (for MoM generation)
+   - Cleanup & normalization pipeline
+   - Future context-aware correction layer
+
+5. Voice Intelligence Layer (Planned)
+   - Speaker profile enrollment
+   - Voice training / speaker adaptation
+   - Speaker identification and diarization
+
+6. Audio Quality Layer
+   - Browser-level noise suppression
+   - Backend chunk filtering
+   - Future advanced noise suppression / speech enhancement
+
+------------------------------------------------------------
+3. WORKFLOW (END-TO-END)
+------------------------------------------------------------
+Step 1: User starts meeting from frontend
+
+Step 2: Microphone stream starts
+- Audio captured
+- Browser audio constraints applied
+- VAD (Voice Activity Detection) filters some noise
+
+Step 3: Audio chunks sent to backend via WebSocket
+
+Step 4: Backend processes chunks
+- Buffering
+- Overlap handling
+- WAV conversion
+
+Step 5: Sent to TorongoXetu bridge
+- Assamese transcription
+
+Step 6: Transcript cleanup
+- Remove fillers
+- Normalize text
+- Fix punctuation
+- Deduplicate overlap errors
+
+Step 7: Live UI updates
+- transcript.partial (real-time)
+- transcript.final (clean segments)
+
+Step 8: Data stored in MongoDB
+
+Step 9: Live Minutes generated periodically
+
+Step 10: On meeting end
+- Final transcript compiled
+- AI generates structured MoM
+- Data saved + displayed
+
+Future extended workflow:
+- Voice-trained speaker profiles improve identification
+- Context AI improves domain vocabulary and sentence correction
+- Enhanced noise suppression reduces background voices/noise
+
+------------------------------------------------------------
+4. WHAT IS COMPLETED
+------------------------------------------------------------
+CORE SYSTEM:
+✔ Full backend (FastAPI)
+✔ MongoDB integration
+✔ WebSocket live system
+✔ Meeting lifecycle (start/end)
+
+ASR INTEGRATION:
+✔ TorongoXetu Assamese model integrated
+✔ NeMo bridge setup
+✔ Chunk-based live transcription
+
+FRONTEND:
+✔ Live meeting screen
+✔ Transcript UI (single speaker)
+✔ Live MoM panel
+✔ Mic streaming with VAD
+
+AUDIO PIPELINE:
+✔ PCM → WAV conversion
+✔ Chunk buffering + overlap
+✔ Browser-level noise suppression enabled
+✔ Basic filtering and speech gating
+
+TRANSCRIPT PROCESSING:
+✔ Cleanup layer implemented
+✔ Deduplication logic
+✔ Partial + final transcript system
+
+REAL-TIME FEATURES:
+✔ Live transcription working
+✔ Live minutes generation working
+
+------------------------------------------------------------
+5. CURRENT STATUS
+------------------------------------------------------------
+You are at:
+
+>>> PRODUCTION-GRADE SINGLE SPEAKER LIVE ASR (PHASE 2 COMPLETE)
+
+Working Features:
+- Live transcription (Assamese)
+- Partial + final updates
+- Real-time display
+- Cleanup applied
+- Backend stable
+
+Accuracy:
+~50–60% live accuracy (expected at this stage)
+
+------------------------------------------------------------
+6. WHAT IS PARTIALLY DONE
+------------------------------------------------------------
+NOISE SUPPRESSION:
+✔ Browser-side echo cancellation
+✔ Browser-side noise suppression
+✔ Auto gain control
+✔ Basic VAD / speech gating
+✖ Advanced backend denoising not yet added
+✖ Speaker-isolation level suppression not yet added
+
+CONTEXT AI:
+✔ Live minutes generation exists
+✔ Cleanup/correction logic exists
+✖ Context-aware transcript correction not yet added
+✖ Meeting-history-aware AI refinement not yet added
+✖ Custom domain vocabulary reasoning not yet added
+
+VOICE TRAINING:
+✖ Not implemented yet
+Planned scope:
+- enroll speaker voice samples
+- create speaker profiles
+- improve speaker recognition and adaptation
+- help diarization and accuracy for known speakers
+
+------------------------------------------------------------
+7. CURRENT LIMITATIONS
+------------------------------------------------------------
+- Chunk-based delay (not true word-by-word streaming)
+- Background noise still captured sometimes
+- No speaker separation yet
+- Mixed-language not handled properly yet
+- No voice-trained personalization yet
+- No context-aware correction yet
+- Accuracy not yet production-level
+
+------------------------------------------------------------
+8. NEXT DEVELOPMENT PHASES
+------------------------------------------------------------
+
+PHASE 2A (NOW):
+- Improve chunk tuning
+- Improve cleanup logic
+- Improve VAD filtering
+- Strengthen noise suppression tuning
+
+PHASE 2B:
+- Final transcript refinement pipeline
+- Reprocess meeting after completion
+- Improve final accuracy to 75–85%
+
+PHASE 2C:
+- Context AI layer
+- Use meeting title, template, and prior segments
+- Add domain correction for names, departments, projects, locations
+- Improve live and final transcript quality using contextual cues
+
+PHASE 3:
+- Mixed-language support
+  (Assamese + English + Hindi)
+
+PHASE 4:
+- Multi-speaker support
+  - Speaker diarization
+  - Speaker labeling
+  - Overlap handling
+
+PHASE 5:
+- Voice training / speaker adaptation
+- Speaker profile enrollment
+- Known-speaker matching
+- Personalized correction and recognition improvement
+
+PHASE 6:
+- Advanced noise suppression
+- Better background voice rejection
+- Speech enhancement before ASR
+- Optional source separation / directional logic
+
+PHASE 7:
+- Production scaling
+- Deployment
+- Performance optimization
+
+------------------------------------------------------------
+9. VOICE TRAINING - PLANNED DETAILS
+------------------------------------------------------------
+Purpose:
+- Improve recognition for known recurring speakers
+- Help the system distinguish speaker voices over time
+- Support future speaker labeling in meeting transcripts
+
+Planned flow:
+1. Speaker enrollment page
+2. Record clean voice samples
+3. Store speaker voice profile
+4. Use profile during live/final inference
+5. Match diarized speech with known users
+
+Expected benefit:
+- Better personalization
+- Better multi-speaker handling
+- Better accuracy for recurring team members
+
+------------------------------------------------------------
+10. CONTEXT AI - PLANNED DETAILS
+------------------------------------------------------------
+Purpose:
+- Correct transcript using meeting context
+- Improve names, roles, departments, project terms, and domain language
+- Generate better structured MoM
+
+Planned context sources:
+- Meeting title
+- Selected template
+- Previous transcript segments
+- Known project vocabulary
+- Team member names
+- Historic minutes / prior meetings
+
+Expected benefit:
+- Better correction quality
+- Better final summary and action items
+- Better mixed-language handling in practical meetings
+
+------------------------------------------------------------
+11. NOISE SUPPRESSION - STATUS & PLAN
+------------------------------------------------------------
+Already present:
+- echoCancellation
+- noiseSuppression
+- autoGainControl
+- high-pass filtering
+- low-pass filtering
+- VAD-based speech gating
+
+Still needed:
+- stronger background speech rejection
+- adaptive denoising
+- meeting-room noise profile calibration
+- separation of main speaker vs background voices
+
+Expected benefit:
+- fewer false chunks
+- less background transcription
+- cleaner live captions
+
+------------------------------------------------------------
+12. INTEGRATIONS USED
+------------------------------------------------------------
+- FastAPI (Backend)
+- React (Frontend)
+- MongoDB (Database)
+- WebSocket (Live streaming)
+- TorongoXetu (ASR)
+- NeMo (Speech model)
+- Gemini (AI MoM generation)
+
+------------------------------------------------------------
+13. FINAL TARGET SYSTEM
+------------------------------------------------------------
+A system that can:
+- Capture real meetings live
+- Understand multiple speakers
+- Support multiple languages
+- Learn recurring speakers
+- Use meeting context to improve correction
+- Reduce background-noise errors
+- Generate accurate MoM automatically
+- Reduce manual effort by 90%+
+
+------------------------------------------------------------
+14. SUMMARY
+------------------------------------------------------------
+The system is already functional and stable.
+
+What is built:
+- End-to-end working AI meeting pipeline
+
+What remains:
+- Accuracy improvement
+- Final transcript refinement
+- Context AI
+- Voice training
+- Mixed-language support
+- Multi-speaker intelligence
+- Advanced noise suppression
+
+You are now transitioning from:
+"Working system" → "Production-grade intelligent system"
+
+------------------------------------------------------------
+END OF DOCUMENT

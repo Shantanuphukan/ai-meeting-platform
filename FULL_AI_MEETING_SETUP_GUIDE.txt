@@ -1,0 +1,200 @@
+AI MEETING PLATFORM – FULL ONE-TIME INSTALLATION & RUN GUIDE (ALL 4 TERMINALS)
+
+======================================================
+SECTION 1: SYSTEM OVERVIEW
+======================================================
+
+You will run 4 services:
+
+1. NeMo Assamese ASR Bridge (Port 8092)
+2. Main Backend (FastAPI)
+3. Frontend (React/Vite)
+4. TorongoSetu (Audio Streaming Layer – optional depending on your flow)
+
+======================================================
+SECTION 2: ONE-TIME INSTALLATION (DO THIS FIRST)
+======================================================
+
+------------------------------
+STEP 1: CLONE / OPEN PROJECT
+------------------------------
+Open your project folder:
+
+C:\Users\sphuk\ai-meeting-platform
+
+------------------------------
+STEP 2: NEMO BRIDGE SETUP
+------------------------------
+
+cd backend\bridges\nemo_bridge
+
+Create virtual environment:
+
+py -3.11 -m venv nemo_bridge_venv
+
+Activate:
+
+nemo_bridge_venv\Scripts\activate
+
+Upgrade pip:
+
+python -m pip install --upgrade pip setuptools wheel
+
+Install requirements:
+
+python -m pip install -r requirements_nemo_bridge.txt
+
+------------------------------
+STEP 3: INSTALL NEMO FROM SOURCE
+------------------------------
+
+cd ..\NeMo
+python setup.py install
+
+Return:
+
+cd ..\nemo_bridge
+
+------------------------------
+STEP 4: DOWNLOAD ASSAMESE MODEL
+------------------------------
+
+Create models folder:
+
+mkdir models
+
+Download model:
+
+python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='ai4bharat/indicconformer_stt_as_hybrid_ctc_rnnt_large', filename='indicconformer_stt_as_hybrid_rnnt_large.nemo', local_dir='./models', local_dir_use_symlinks=False)"
+
+Rename:
+
+Get-ChildItem .\models\*.nemo | Rename-Item -NewName "assamese.nemo"
+
+------------------------------
+STEP 5: MAIN BACKEND SETUP
+------------------------------
+
+cd ..\..\..
+
+cd backend
+
+Create env:
+
+python -m venv venv
+
+Activate:
+
+venv\Scripts\activate
+
+Install:
+
+pip install -r requirements.txt
+
+------------------------------
+STEP 6: FRONTEND SETUP
+------------------------------
+
+cd ..\frontend
+
+npm install
+
+------------------------------
+STEP 7: TORONGOSETU SETUP (IF USED)
+------------------------------
+
+cd torongosetu
+
+python -m venv venv
+venv\Scripts\activate
+
+pip install -r requirements.txt
+
+======================================================
+SECTION 3: RUNNING THE SYSTEM (4 TERMINALS)
+======================================================
+
+------------------------------
+TERMINAL 1 – NEMO BRIDGE
+------------------------------
+
+cd backend\bridges\nemo_bridge
+nemo_bridge_venv\Scripts\activate
+
+$env:NEMO_MODEL_PATH=".\models\assamese.nemo"
+Remove-Item Env:NEMO_MODEL_NAME -ErrorAction SilentlyContinue
+
+python -m uvicorn app:app --host 127.0.0.1 --port 8092 --reload
+
+------------------------------
+TERMINAL 2 – BACKEND
+------------------------------
+
+cd backend
+venv\Scripts\activate
+
+python -m uvicorn app.main:app --reload
+
+------------------------------
+TERMINAL 3 – FRONTEND
+------------------------------
+
+cd frontend
+npm run dev
+
+------------------------------
+TERMINAL 4 – TORONGOSETU
+------------------------------
+
+cd backend\bridges\torongoxetu_bridge
+
+venv\Scripts\activate
+
+python -m uvicorn app:app --host 127.0.0.1 --port 8001 --reload
+
+(or use your existing working command)
+
+======================================================
+SECTION 4: START ORDER (VERY IMPORTANT)
+======================================================
+
+1. Start NeMo Bridge
+2. Start Backend
+3. Start TorongoSetu
+4. Start Frontend
+
+======================================================
+SECTION 5: TESTING
+======================================================
+
+NeMo Bridge:
+
+http://127.0.0.1:8092/docs
+
+Test:
+
+POST /transcribe-upload
+Upload: assamese_16k.wav
+
+Expected:
+
+Assamese text output
+
+======================================================
+SECTION 6: ARCHITECTURE
+======================================================
+
+Frontend → TorongoSetu → Backend → NeMo Bridge → Transcript
+
+======================================================
+SECTION 7: NOTES
+======================================================
+
+• NeMo model loads once at startup
+• Keep all required terminals running
+• GPU will be used automatically if available
+• If TorongoSetu is not used, system works with 3 terminals
+
+======================================================
+END OF GUIDE
+======================================================
