@@ -6,7 +6,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .mypy_cache/
-bridges/
+/backend/.bridges/
 
 # Node
 frontend/node_modules/
