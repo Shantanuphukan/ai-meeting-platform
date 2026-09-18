@@ -37,24 +37,16 @@ def resolve_live_engine(language: str | None) -> str:
         return "deepgram"
 
     if normalized == "as":
-        if settings.ENABLE_INDIC_STREAMING:
-            return "indicconformer"
         return "torongoxetu"
 
     if normalized == "mix":
-        if settings.ENABLE_INDIC_STREAMING:
-            return "indicconformer"
         return "deepgram"
 
     return "deepgram"
 
 
 def should_use_indic_streaming(language: str | None) -> bool:
-    normalized = normalize_meeting_language(language)
-
-    if normalized in {"as", "mix"} and settings.ENABLE_INDIC_STREAMING:
-        return True
-
+    # IndicConformer is kept out of the active live routing path for now.
     return False
 
 

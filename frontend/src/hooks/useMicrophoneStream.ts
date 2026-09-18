@@ -34,6 +34,12 @@ function mergeFloat32Chunks(chunks: Float32Array[]): Float32Array {
   return merged;
 }
 
+function generateSilentPCM(durationMs: number = 300): ArrayBuffer {
+  const sampleRate = 16000;
+  const samples = Math.floor((sampleRate * durationMs) / 1000);
+  return new ArrayBuffer(samples * 2);
+}
+
 export function useMicrophoneStream(onChunk: AudioChunkHandler) {
   const rawStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -105,16 +111,20 @@ export function useMicrophoneStream(onChunk: AudioChunkHandler) {
       const highPass = audioContext.createBiquadFilter();
       highPass.type = "highpass";
       highPass.frequency.value = 90;
+      highPassRef.current = highPass;
 
       const lowPass = audioContext.createBiquadFilter();
       lowPass.type = "lowpass";
       lowPass.frequency.value = 4200;
+      lowPassRef.current = lowPass;
 
       const compressor = audioContext.createDynamicsCompressor();
       compressor.threshold.value = -28;
+      compressorRef.current = compressor;
 
       const gainNode = audioContext.createGain();
       gainNode.gain.value = 1.1;
+      gainNodeRef.current = gainNode;
 
       const processorNode = audioContext.createScriptProcessor(512, 1, 1);
       processorNodeRef.current = processorNode;
@@ -168,7 +178,7 @@ export function useMicrophoneStream(onChunk: AudioChunkHandler) {
         if (looksLikeSpeech) {
           speechCandidateFramesRef.current++;
           silentFramesRef.current = 0;
-          speechHoldFramesRef.current = 6; // 🔥 increased hold
+          speechHoldFramesRef.current = 6;
         } else {
           speechCandidateFramesRef.current = 0;
           silentFramesRef.current++;
@@ -179,7 +189,9 @@ export function useMicrophoneStream(onChunk: AudioChunkHandler) {
             inSpeechRef.current = true;
             activeSpeechFramesRef.current.push(...preSpeechFramesRef.current);
             preSpeechFramesRef.current = [];
-          } else return;
+          } else {
+            return;
+          }
         }
 
         if (looksLikeSpeech || speechHoldFramesRef.current > 0) {
@@ -189,7 +201,6 @@ export function useMicrophoneStream(onChunk: AudioChunkHandler) {
 
           activeSpeechFramesRef.current.push(frame);
 
-          // 🔥 KEY FIX: accumulate before flush
           if (activeSpeechFramesRef.current.length >= 6) {
             flushFrames(activeSpeechFramesRef.current);
             activeSpeechFramesRef.current = [];
@@ -198,7 +209,6 @@ export function useMicrophoneStream(onChunk: AudioChunkHandler) {
           return;
         }
 
-        // 🔥 Add trailing silence frames before flush
         if (activeSpeechFramesRef.current.length > 0) {
           flushFrames(activeSpeechFramesRef.current);
           activeSpeechFramesRef.current = [];
@@ -215,14 +225,26 @@ export function useMicrophoneStream(onChunk: AudioChunkHandler) {
       gainNode.connect(processorNode);
       processorNode.connect(audioContext.destination);
 
+      preSpeechFramesRef.current = [];
+      activeSpeechFramesRef.current = [];
+      inSpeechRef.current = false;
+      speechCandidateFramesRef.current = 0;
+      silentFramesRef.current = 0;
+      speechHoldFramesRef.current = 0;
+      smoothedRmsRef.current = 0;
+
       setIsRecording(true);
+
+      // Keep live ASR sockets alive immediately after start.
+      const silentChunk = generateSilentPCM(300);
+      onChunk(silentChunk, chunkIndexRef.current++);
     } catch (error) {
       console.error("Mic start failed:", error);
       setIsRecording(false);
     } finally {
       isStartingRef.current = false;
     }
-  }, [flushFrames, isRecording]);
+  }, [flushFrames, isRecording, onChunk]);
 
   const stop = useCallback(() => {
     try {
@@ -233,9 +255,37 @@ export function useMicrophoneStream(onChunk: AudioChunkHandler) {
 
     if (processorNodeRef.current) processorNodeRef.current.disconnect();
     if (sourceNodeRef.current) sourceNodeRef.current.disconnect();
+    if (highPassRef.current) highPassRef.current.disconnect();
+    if (lowPassRef.current) lowPassRef.current.disconnect();
+    if (compressorRef.current) compressorRef.current.disconnect();
+    if (gainNodeRef.current) gainNodeRef.current.disconnect();
+
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch {}
+      audioContextRef.current = null;
+    }
+
     if (rawStreamRef.current) {
       rawStreamRef.current.getTracks().forEach((t) => t.stop());
+      rawStreamRef.current = null;
     }
+
+    processorNodeRef.current = null;
+    sourceNodeRef.current = null;
+    highPassRef.current = null;
+    lowPassRef.current = null;
+    compressorRef.current = null;
+    gainNodeRef.current = null;
+
+    preSpeechFramesRef.current = [];
+    activeSpeechFramesRef.current = [];
+    inSpeechRef.current = false;
+    speechCandidateFramesRef.current = 0;
+    silentFramesRef.current = 0;
+    speechHoldFramesRef.current = 0;
+    smoothedRmsRef.current = 0;
 
     setIsRecording(false);
   }, [flushFrames]);

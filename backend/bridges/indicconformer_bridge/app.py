@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import traceback
 
 from dotenv import load_dotenv
 
@@ -41,10 +42,7 @@ def _normalize_language(language: str | None) -> str:
 
 @app.on_event("startup")
 def startup_event():
-    try:
-        engine.load()
-    except Exception as e:
-        print(f"[IndicConformer Bridge] Startup load warning: {e}")
+    engine.load()
 
 
 @app.get("/health")
@@ -54,10 +52,8 @@ def health():
         "service": "indicconformer_bridge",
         "provider": "indicconformer",
         "model_loaded": engine.is_loaded(),
-        "device": engine.device,
-        "model_name": engine.model_name,
-        "model_path": engine.model_path,
-        "language_id": engine.language_id,
+        "device": getattr(engine, "device", "cpu"),
+        "model_name": getattr(engine, "model_name", ""),
     }
 
 
@@ -80,6 +76,11 @@ async def transcribe(
         if not engine.is_loaded():
             engine.load()
     except Exception as e:
+        print("===================================")
+        print("INDIC BRIDGE MODEL LOAD FAILED")
+        print(repr(e))
+        traceback.print_exc()
+        print("===================================")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to load IndicConformer model: {repr(e)}"
@@ -102,4 +103,14 @@ async def transcribe(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"IndicConformer bridge failed: {e}")
+        print("===================================")
+        print("INDIC BRIDGE /transcribe FAILED")
+        print(f"normalized_language={normalized_language}")
+        print(f"audio_bytes_len={len(audio_bytes)}")
+        print(repr(e))
+        traceback.print_exc()
+        print("===================================")
+        raise HTTPException(
+            status_code=500,
+            detail=f"IndicConformer bridge failed: {repr(e)}"
+        )
